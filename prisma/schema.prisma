@@ -1,0 +1,59 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  uploads   Upload[]
+}
+
+model Upload {
+  id         String   @id @default(cuid())
+  userId     String
+  imageCount Int
+  faceCount  Int
+  status     Status   @default(UPLOADED)
+  createdAt  DateTime @default(now())
+
+  user  User @relation(fields: [userId], references: [id])
+  jobs  Job[] // added for reverse relation
+
+  @@map("uploads")
+}
+
+model Job {
+  id          String   @id @default(cuid())
+  uploadId    String
+  prompt      String
+  status      Status   @default(QUEUED)
+  progress    Int      @default(0)
+  createdAt   DateTime @default(now())
+  completedAt DateTime?
+
+  upload Upload @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+
+  @@map("jobs")
+}
+
+enum Status {
+  UPLOADED
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+}

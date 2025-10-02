@@ -15,13 +15,27 @@ export default function DashboardPage() {
   const [uploadId, setUploadId] = useState<string | null>(null)
   const [jobId, setJobId] = useState<string | null>(null)
   const [resultId, setResultId] = useState<string | null>(null)
-  const [showHistory, setShowHistory] = useState(false)
 
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login')
     }
   }, [status, router])
+
+  const handleUploadComplete = (newUploadId: string) => {
+    setUploadId(newUploadId)
+    setJobId(null)
+    setResultId(null)
+  }
+
+  const handleGenerateStart = (newJobId: string) => {
+    setJobId(newJobId)
+    setResultId(null)
+  }
+
+  const handleGenerationComplete = (newResultId: string) => {
+    setResultId(newResultId)
+  }
 
   if (status === 'loading') {
     return (
@@ -48,16 +62,9 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex items-center gap-4">
-            <button
-              onClick={() => setShowHistory(!showHistory)}
-              className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
-            >
-              📚 History
-            </button>
-            
             <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg">
               <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
-                {session?.user?.name?.[0]?.toUpperCase()}
+                {session?.user?.name?.[0]?.toUpperCase() || 'U'}
               </div>
               <span className="font-medium">{session?.user?.name}</span>
             </div>
@@ -72,26 +79,32 @@ export default function DashboardPage() {
         </div>
       </header>
 
+      {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         <div className="mb-6 p-6 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl text-white">
-          <h2 className="text-3xl font-bold mb-2">Welcome, {session?.user?.name}! 👋</h2>
-          <p>Upload photos and let Meta LLaMA enhance your prompts</p>
+          <h2 className="text-3xl font-bold mb-2">
+            Welcome, {session?.user?.name}! 👋
+          </h2>
+          <p>Upload photos and let Meta LLaMA enhance your prompts for amazing AI images</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Left Column */}
           <div className="space-y-6">
-            <ImageUploader onUploadComplete={setUploadId} />
+            <ImageUploader onUploadComplete={handleUploadComplete} />
             <PromptInput 
               uploadId={uploadId}
-              onGenerateStart={setJobId}
+              onGenerateStart={handleGenerateStart}
             />
           </div>
 
+          {/* Right Column */}
           <div className="space-y-6">
             {jobId && (
               <ProcessingStatus 
+            
                 jobId={jobId}
-                onComplete={setResultId}
+                onComplete={handleGenerationComplete}
               />
             )}
             {resultId && <ResultGallery resultId={resultId} />}

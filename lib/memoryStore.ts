@@ -9,6 +9,8 @@ interface JobData {
   progress: number
   result?: string
   error?: string
+  imageData?: string  // ADD THIS
+  imageUrl?: string 
 }
 
 class MemoryStore {

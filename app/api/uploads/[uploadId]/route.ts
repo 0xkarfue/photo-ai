@@ -23,7 +23,7 @@ export async function GET(
       }, { status: 401 })
     }
 
-    const { uploadId } = params
+    const { uploadId } = await params
 
     // Fetch upload from database
     const upload = await prisma.upload.findUnique({

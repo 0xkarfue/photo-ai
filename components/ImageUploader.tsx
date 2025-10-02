@@ -39,7 +39,6 @@ export default function ImageUploader({ onUploadComplete }: ImageUploaderProps) 
     setError('')
 
     try {
-      // Step 1: Create upload session
       const sessionRes = await fetch('/api/uploads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -51,7 +50,6 @@ export default function ImageUploader({ onUploadComplete }: ImageUploaderProps) 
 
       setProgress(20)
 
-      // Step 2: Upload images
       const formData = new FormData()
       formData.append('uploadId', sessionData.data.uploadId)
       files.forEach(file => formData.append('images', file))

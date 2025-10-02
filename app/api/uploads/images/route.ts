@@ -26,6 +26,9 @@ export async function POST(request: NextRequest) {
     const uploadId = formData.get('uploadId') as string
     const files = formData.getAll('images') as File[]
 
+    console.log('Received uploadId:', uploadId)
+    console.log('Received files count:', files.length)
+
     // Validation
     if (!uploadId) {
       return NextResponse.json({
@@ -73,6 +76,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Convert files to buffers
+    console.log('Converting files to buffers...')
     const imageBuffers = await Promise.all(
       files.map(async (file) => {
         // Validate file type
@@ -90,10 +94,13 @@ export async function POST(request: NextRequest) {
       })
     )
 
+    console.log('Processing faces...')
     // Process faces
     const startTime = Date.now()
     const { faceData, totalFaces } = await processFaceData(imageBuffers)
     const processingTime = (Date.now() - startTime) / 1000
+
+    console.log('Total faces detected:', totalFaces)
 
     if (totalFaces === 0) {
       return NextResponse.json({
@@ -106,6 +113,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update upload in database
+    console.log('Updating database...')
     await prisma.upload.update({
       where: { id: uploadId },
       data: { 
@@ -115,6 +123,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Store images and face data in memory
+    console.log('Storing in memory...')
     memoryStore.setUpload(uploadId, {
       images: imageBuffers,
       faces: faceData,
@@ -123,6 +132,8 @@ export async function POST(request: NextRequest) {
         fileTypes: files.map(f => f.type)
       }
     })
+
+    console.log('Upload complete!')
 
     return NextResponse.json({
       success: true,
@@ -163,8 +174,20 @@ export async function POST(request: NextRequest) {
       success: false,
       error: {
         code: 'INTERNAL_ERROR',
-        message: 'Failed to process images'
+        message: error.message || 'Failed to process images'
       }
     }, { status: 500 })
   }
+}
+
+// Add OPTIONS handler for CORS if needed
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    },
+  })
 }

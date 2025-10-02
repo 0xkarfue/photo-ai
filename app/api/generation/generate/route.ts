@@ -1,39 +1,31 @@
-// app/api/generation/generate/route.ts
+// app/api/generation/generate/route.ts - Updated for Hugging Face
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { memoryStore } from '@/lib/memoryStore'
+import { generateImage } from '@/lib/imageGeneration'
 
 export async function POST(request: NextRequest) {
   try {
-    // Check authentication
     const session = await getServerSession(authOptions)
     
     if (!session || !session.user?.id) {
       return NextResponse.json({
         success: false,
-        error: {
-          code: 'UNAUTHORIZED',
-          message: 'Authentication required'
-        }
+        error: { code: 'UNAUTHORIZED', message: 'Authentication required' }
       }, { status: 401 })
     }
 
-    const { uploadId, prompt, enhancedPrompt, options } = await request.json()
+    const { uploadId, prompt, enhancedPrompt } = await request.json()
 
-    // Validation
     if (!uploadId || !prompt) {
       return NextResponse.json({
         success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Upload ID and prompt are required'
-        }
+        error: { code: 'VALIDATION_ERROR', message: 'Upload ID and prompt required' }
       }, { status: 400 })
     }
 
-    // Verify upload exists and belongs to user
     const upload = await prisma.upload.findUnique({
       where: { id: uploadId }
     })
@@ -41,35 +33,17 @@ export async function POST(request: NextRequest) {
     if (!upload) {
       return NextResponse.json({
         success: false,
-        error: {
-          code: 'NOT_FOUND',
-          message: 'Upload not found'
-        }
+        error: { code: 'NOT_FOUND', message: 'Upload not found' }
       }, { status: 404 })
     }
 
     if (upload.userId !== session.user.id) {
       return NextResponse.json({
         success: false,
-        error: {
-          code: 'FORBIDDEN',
-          message: 'Access denied'
-        }
+        error: { code: 'FORBIDDEN', message: 'Access denied' }
       }, { status: 403 })
     }
 
-    // Check if faces were detected
-    if (upload.faceCount === 0) {
-      return NextResponse.json({
-        success: false,
-        error: {
-          code: 'NO_FACES',
-          message: 'No faces detected in upload. Please upload images with clear faces.'
-        }
-      }, { status: 400 })
-    }
-
-    // Create job
     const job = await prisma.job.create({
       data: {
         uploadId,
@@ -79,14 +53,13 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Initialize job in memory
     memoryStore.setJob(job.id, {
       status: 'QUEUED',
       progress: 0
     })
 
-    // Start async processing (non-blocking)
-    processGenerationJob(job.id, uploadId, upload.faceCount).catch(err => {
+    // Start generation with Hugging Face
+    processHuggingFaceGeneration(job.id, enhancedPrompt || prompt).catch(err => {
       console.error('Job processing error:', err)
     })
 
@@ -94,7 +67,7 @@ export async function POST(request: NextRequest) {
       success: true,
       data: {
         jobId: job.id,
-        estimatedTime: 45,
+        estimatedTime: 30,
         status: 'QUEUED',
         message: 'Your image generation has started!',
         progress: 0
@@ -105,45 +78,39 @@ export async function POST(request: NextRequest) {
     console.error('Generation error:', error)
     return NextResponse.json({
       success: false,
-      error: {
-        code: 'INTERNAL_ERROR',
-        message: 'Failed to start generation'
-      }
+      error: { code: 'INTERNAL_ERROR', message: 'Failed to start generation' }
     }, { status: 500 })
   }
 }
 
-// Simulated async processing function
-async function processGenerationJob(jobId: string, uploadId: string, faceCount: number) {
-  const steps = [
-    { name: 'prompt-enhancement', duration: 2000, progress: 10 },
-    { name: 'image-generation', duration: 15000, progress: 40 },
-    { name: 'face-detection', duration: 5000, progress: 60 },
-    { name: 'face-swapping', duration: 15000, progress: 90 },
-    { name: 'final-processing', duration: 5000, progress: 100 }
-  ]
-
+async function processHuggingFaceGeneration(jobId: string, prompt: string) {
   try {
-    for (const step of steps) {
-      // Update job status
-      await prisma.job.update({
-        where: { id: jobId },
-        data: {
-          status: 'PROCESSING',
-          progress: step.progress
-        }
-      })
+    // Update: Starting
+    await prisma.job.update({
+      where: { id: jobId },
+      data: { status: 'PROCESSING', progress: 20 }
+    })
+    memoryStore.updateJob(jobId, { status: 'PROCESSING', progress: 20 })
 
-      memoryStore.updateJob(jobId, {
-        status: 'PROCESSING',
-        progress: step.progress
-      })
+    console.log(`[Job ${jobId}] Starting Hugging Face generation...`)
 
-      // Simulate processing time
-      await new Promise(resolve => setTimeout(resolve, step.duration))
+    // Generate image (this takes 20-40 seconds)
+    const result = await generateImage(prompt)
+
+    if (!result.success || !result.imageData) {
+      throw new Error(result.error || 'Image generation failed')
     }
 
-    // Complete job
+    console.log(`[Job ${jobId}] Image generated successfully`)
+
+    // Update: Almost done
+    await prisma.job.update({
+      where: { id: jobId },
+      data: { progress: 90 }
+    })
+    memoryStore.updateJob(jobId, { progress: 90 })
+
+    // Complete
     await prisma.job.update({
       where: { id: jobId },
       data: {
@@ -153,28 +120,27 @@ async function processGenerationJob(jobId: string, uploadId: string, faceCount: 
       }
     })
 
-    // Store result
     memoryStore.updateJob(jobId, {
       status: 'COMPLETED',
       progress: 100,
-      result: `result_${jobId}`
+      result: `result_${jobId}`,
+      imageData: result.imageData // Store the base64 image
     })
 
-  } catch (error) {
-    console.error('Job processing failed:', error)
+    console.log(`[Job ${jobId}] Generation complete!`)
+
+  } catch (error: any) {
+    console.error(`[Job ${jobId}] Generation failed:`, error)
     
     await prisma.job.update({
       where: { id: jobId },
-      data: {
-        status: 'FAILED',
-        progress: 0
-      }
+      data: { status: 'FAILED', progress: 0 }
     })
 
     memoryStore.updateJob(jobId, {
       status: 'FAILED',
       progress: 0,
-      error: 'Processing failed'
+      error: error.message || 'Generation failed'
     })
   }
 }

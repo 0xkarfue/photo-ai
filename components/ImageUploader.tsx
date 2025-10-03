@@ -84,17 +84,17 @@ export default function ImageUploader({ onUploadComplete }: ImageUploaderProps) 
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-2xl font-bold mb-4">Upload Your Photos</h2>
-      <p className="text-gray-600 mb-4">Upload 5-10 clear photos for best results</p>
+    <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-800 p-6">
+      <h2 className="text-2xl font-bold mb-4 text-white">Upload Your Photos</h2>
+      <p className="text-gray-400 mb-4">Upload 5-10 clear photos for best results</p>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+        <div className="mb-4 p-3 bg-red-900/30 border border-red-700/50 text-red-300 rounded-lg">
           {error}
         </div>
       )}
 
-      <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-500 transition mb-4">
+      <div className="border-2 border-dashed border-gray-700 rounded-lg p-8 text-center hover:border-blue-500 transition-colors mb-4 bg-gray-800/30">
         <input
           type="file"
           multiple
@@ -106,15 +106,15 @@ export default function ImageUploader({ onUploadComplete }: ImageUploaderProps) 
         />
         <label htmlFor="file-upload" className="cursor-pointer">
           <div className="text-5xl mb-3">📸</div>
-          <p className="font-semibold text-lg mb-1">Click to select photos</p>
-          <p className="text-sm text-gray-500">or drag and drop</p>
-          <p className="text-xs text-gray-400 mt-2">PNG, JPG up to 10MB each</p>
+          <p className="font-semibold text-lg mb-1 text-white">Click to select photos</p>
+          <p className="text-sm text-gray-400">or drag and drop</p>
+          <p className="text-xs text-gray-500 mt-2">PNG, JPG up to 10MB each</p>
         </label>
       </div>
 
       {previews.length > 0 && (
         <div className="mb-4">
-          <p className="font-semibold mb-2">
+          <p className="font-semibold mb-2 text-gray-300">
             Selected: {files.length} images
             {files.length >= 5 && files.length <= 10 && ' ✅'}
           </p>
@@ -124,11 +124,11 @@ export default function ImageUploader({ onUploadComplete }: ImageUploaderProps) 
                 <img
                   src={preview}
                   alt={`Preview ${idx + 1}`}
-                  className="w-full h-full object-cover rounded border"
+                  className="w-full h-full object-cover rounded border border-gray-700"
                 />
                 <button
                   onClick={() => removeFile(idx)}
-                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 text-xs hover:bg-red-600"
+                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 text-xs hover:bg-red-600 transition-colors"
                 >
                   ✕
                 </button>
@@ -142,7 +142,7 @@ export default function ImageUploader({ onUploadComplete }: ImageUploaderProps) 
         <button
           onClick={handleUpload}
           disabled={uploading}
-          className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 font-semibold"
+          className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-colors"
         >
           {uploading ? `Uploading... ${progress}%` : 'Upload & Process Images'}
         </button>
@@ -150,9 +150,9 @@ export default function ImageUploader({ onUploadComplete }: ImageUploaderProps) 
 
       {uploading && (
         <div className="mt-4">
-          <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="w-full bg-gray-800 rounded-full h-2 border border-gray-700">
             <div
-              className="bg-blue-600 h-2 rounded-full transition-all"
+              className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full transition-all"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -160,11 +160,11 @@ export default function ImageUploader({ onUploadComplete }: ImageUploaderProps) 
       )}
 
       {faceCount > 0 && !uploading && (
-        <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-          <p className="text-green-800 font-semibold">
+        <div className="mt-4 p-4 bg-green-900/30 border border-green-700/50 rounded-lg">
+          <p className="text-green-300 font-semibold">
             ✅ Detected {faceCount} faces in your photos!
           </p>
-          <p className="text-sm text-green-700">Ready to generate images</p>
+          <p className="text-sm text-green-400">Ready to generate images</p>
         </div>
       )}
     </div>

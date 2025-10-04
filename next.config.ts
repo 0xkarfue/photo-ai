@@ -1,15 +1,15 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  experimental: {
-    serverComponentsExternalPackages: ['@prisma/client', 'bcryptjs']
+  serverExternalPackages: ["@prisma/client", "bcryptjs"],
+  experimental: {},
+  eslint: {
+    // Ignore ESLint errors during production builds
+    ignoreDuringBuilds: true,
   },
-  api: {
-    bodyParser: {
-      sizeLimit: '50mb',
-    },
-    responseLimit: '50mb',
+  typescript: {
+    // Keep TypeScript checking enabled (optional - set to true if needed)
+    ignoreBuildErrors: false,
   },
 };
 

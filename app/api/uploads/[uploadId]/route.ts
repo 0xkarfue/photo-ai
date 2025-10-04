@@ -7,12 +7,12 @@ import { memoryStore } from '@/lib/memoryStore'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { uploadId: string } }
+  { params }: { params: Promise<{ uploadId: string }> }
 ) {
   try {
     // Check authentication
     const session = await getServerSession(authOptions)
-    
+
     if (!session || !session.user?.id) {
       return NextResponse.json({
         success: false,

@@ -1,5 +1,6 @@
-'use client'
-import { useEffect, useState } from 'react'
+"use client"
+import { useEffect, useState } from "react"
+import { Clock, CheckCircle2, XCircle, Loader2 } from "lucide-react"
 
 interface ProcessingStatusProps {
   jobId: string
@@ -21,16 +22,16 @@ export default function ProcessingStatus({ jobId, onComplete }: ProcessingStatus
         if (data.success) {
           setStatus(data.data)
 
-          if (data.data.status === 'COMPLETED' && data.data.resultId) {
+          if (data.data.status === "COMPLETED" && data.data.resultId) {
             onComplete?.(data.data.resultId)
           }
 
-          if (data.data.status !== 'COMPLETED' && data.data.status !== 'FAILED') {
+          if (data.data.status !== "COMPLETED" && data.data.status !== "FAILED") {
             setTimeout(pollStatus, 2000)
           }
         }
       } catch (error) {
-        console.error('Status poll error:', error)
+        console.error("Status poll error:", error)
       } finally {
         setLoading(false)
       }
@@ -41,8 +42,8 @@ export default function ProcessingStatus({ jobId, onComplete }: ProcessingStatus
 
   if (loading) {
     return (
-      <div className="text-center p-8 text-gray-400">
-        Loading status...
+      <div className="flex items-center justify-center p-12">
+        <Loader2 className="w-6 h-6 text-zinc-400 animate-spin" />
       </div>
     )
   }
@@ -51,63 +52,85 @@ export default function ProcessingStatus({ jobId, onComplete }: ProcessingStatus
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
-      QUEUED: 'bg-yellow-500',
-      PROCESSING: 'bg-blue-500',
-      COMPLETED: 'bg-green-500',
-      FAILED: 'bg-red-500'
+      QUEUED: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+      PROCESSING: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+      COMPLETED: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+      FAILED: "bg-red-500/20 text-red-400 border-red-500/30",
     }
-    return colors[status] || 'bg-gray-500'
+    return colors[status] || "bg-zinc-500/20 text-zinc-400 border-zinc-500/30"
+  }
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "QUEUED":
+        return <Clock className="w-4 h-4" />
+      case "PROCESSING":
+        return <Loader2 className="w-4 h-4 animate-spin" />
+      case "COMPLETED":
+        return <CheckCircle2 className="w-4 h-4" />
+      case "FAILED":
+        return <XCircle className="w-4 h-4" />
+      default:
+        return <Clock className="w-4 h-4" />
+    }
   }
 
   return (
-    <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-800 p-6">
-      <h2 className="text-2xl font-bold mb-6 text-white">Generation Status</h2>
-      
-      <div className="flex items-center gap-3 mb-6">
-        <div className={`w-3 h-3 rounded-full ${getStatusColor(status.status)} animate-pulse`} />
-        <span className="font-semibold text-lg text-white">{status.status}</span>
+    <div className="bg-zinc-900/50 backdrop-blur-sm rounded-2xl border border-zinc-800/50 p-8">
+      <h2 className="text-xl font-light mb-8 text-zinc-100">Generation Progress</h2>
+
+      <div className="flex items-center gap-3 mb-8">
+        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border ${getStatusColor(status.status)}`}>
+          {getStatusIcon(status.status)}
+          <span className="text-sm font-medium">{status.status}</span>
+        </div>
       </div>
 
-      <div className="mb-6">
-        <div className="flex justify-between text-sm mb-2">
-          <span className="text-gray-300">{status.message}</span>
-          <span className="font-semibold text-white">{status.progress}%</span>
+      <div className="mb-8">
+        <div className="flex justify-between items-baseline mb-3">
+          <span className="text-sm text-zinc-400 font-light">{status.message}</span>
+          <span className="text-sm font-medium text-zinc-300">{status.progress}%</span>
         </div>
-        <div className="w-full bg-gray-800 rounded-full h-4 overflow-hidden border border-gray-700">
+        <div className="w-full bg-zinc-800/50 rounded-full h-1.5 overflow-hidden">
           <div
-            className="bg-gradient-to-r from-blue-500 to-purple-500 h-4 rounded-full transition-all duration-500"
+            className="bg-gradient-to-r from-blue-500 to-violet-500 h-1.5 rounded-full transition-all duration-500 ease-out"
             style={{ width: `${status.progress}%` }}
           />
         </div>
       </div>
 
       {status.currentStep && (
-        <div className="p-3 bg-blue-900/30 rounded-lg mb-4 border border-blue-700/50">
-          <span className="font-medium capitalize text-blue-300">
-            Current Step: {status.currentStep.replace('-', ' ')}
+        <div className="px-4 py-3 bg-zinc-800/30 rounded-xl mb-6 border border-zinc-700/30">
+          <span className="text-sm font-light text-zinc-300">
+            {status.currentStep.replace("-", " ").replace(/\b\w/g, (l: string) => l.toUpperCase())}
           </span>
         </div>
       )}
 
       {status.estimatedTimeRemaining > 0 && (
-        <p className="text-sm text-gray-400">
-          ⏱️ Estimated time: {status.estimatedTimeRemaining} seconds
-        </p>
-      )}
-
-      {status.status === 'COMPLETED' && (
-        <div className="mt-4 p-4 bg-green-900/30 border border-green-700/50 rounded-lg">
-          <p className="text-green-300 font-semibold text-lg">
-            🎉 Generation Complete!
-          </p>
-          <p className="text-sm text-green-400">Your image is ready below</p>
+        <div className="flex items-center gap-2 text-sm text-zinc-400 font-light">
+          <Clock className="w-4 h-4" />
+          <span>Estimated time: {status.estimatedTimeRemaining}s</span>
         </div>
       )}
 
-      {status.status === 'FAILED' && (
-        <div className="mt-4 p-4 bg-red-900/30 border border-red-700/50 rounded-lg">
-          <p className="text-red-300 font-semibold">❌ Generation Failed</p>
-          <p className="text-sm text-red-400">{status.error || 'Please try again'}</p>
+      {status.status === "COMPLETED" && (
+        <div className="mt-6 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+          <div className="flex items-center gap-2 mb-1">
+            <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+            <p className="text-emerald-300 font-medium">Generation Complete</p>
+          </div>
+          <p className="text-sm text-emerald-400/70 font-light ml-7">Your image is ready to view</p>
+        </div>
+      )}
+
+      {status.status === "FAILED" && (
+        <div className="mt-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
+          <div className="flex items-center gap-2 mb-1">
+            <XCircle className="w-5 h-5 text-red-400" />
+            <p className="text-red-300 font-medium">Generation Failed</p>
+          </div>
+          <p className="text-sm text-red-400/70 font-light ml-7">{status.error || "Please try again"}</p>
         </div>
       )}
     </div>
